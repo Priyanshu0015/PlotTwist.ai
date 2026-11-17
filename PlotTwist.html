@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlotTwist - AI Storyteller</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar for a polished look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; 
+        }
+        
+        /* Fade in animation for story blocks */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        /* Loading dot animation */
+        .typing-dot {
+            animation: typing 1.4s infinite ease-in-out both;
+        }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 font-sans h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="bg-gray-950 border-b border-gray-800 p-4 shadow-lg z-10 shrink-0">
+        <div class="max-w-4xl mx-auto flex items-center gap-3">
+            <svg class="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+            </svg>
+            <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
+                PlotTwist
+            </h1>
+        </div>
+    </header>
+
+    <!-- Main Story Container -->
+    <main id="story-container" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 pb-12">
+        <!-- Initial Welcome Message -->
+        <div class="max-w-3xl mx-auto bg-gray-800/50 border border-gray-700 rounded-xl p-6 shadow-md">
+            <h2 class="text-xl text-indigo-300 font-semibold mb-2">Welcome to PlotTwist</h2>
+            <p class="text-gray-400 leading-relaxed">
+                You are about to embark on an interactive journey. Enter a premise below to begin. The AI will set the scene and offer you three paths—or you can forge your own destiny by typing a custom choice.
+            </p>
+        </div>
+    </main>
+
+    <!-- Fixed Bottom Controls -->
+    <footer class="bg-gray-900 border-t border-gray-800 p-4 relative z-20 shrink-0 w-full shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.3)]">
+        <div class="max-w-4xl mx-auto relative">
+            
+            <!-- Loading Overlay (hidden by default) -->
+            <div id="loading-indicator" class="hidden absolute -top-16 left-0 w-full flex justify-center pointer-events-none">
+                <div class="bg-gray-800 border border-gray-700 rounded-full px-4 py-2 flex items-center gap-2 shadow-lg">
+                    <span class="text-indigo-400 text-sm font-medium">AI is writing</span>
+                    <div class="flex gap-1">
+                        <div class="w-2 h-2 bg-indigo-500 rounded-full typing-dot"></div>
+                        <div class="w-2 h-2 bg-indigo-500 rounded-full typing-dot"></div>
+                        <div class="w-2 h-2 bg-indigo-500 rounded-full typing-dot"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Setup Phase (Premise Input) -->
+            <div id="setup-controls" class="flex flex-col sm:flex-row gap-3">
+                <input type="text" id="premise-input" 
+                    class="flex-1 bg-gray-800 border border-gray-700 text-gray-100 text-base rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-3.5 placeholder-gray-500 outline-none transition-all" 
+                    placeholder="e.g. A cyberpunk detective searching for a lost synthetic cat..."
+                    autocomplete="off">
+                <button id="start-btn" 
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-base px-6 py-3.5 transition-colors shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2">
+                    Start Story
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                </button>
+            </div>
+
+            <!-- Playing Phase (Choices) -->
+            <div id="playing-controls" class="hidden flex-col gap-3">
+                <!-- AI Generated Choices -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <button class="choice-btn bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-indigo-500 text-gray-300 text-sm p-3 rounded-lg text-left transition-all shadow-sm">Choice 1</button>
+                    <button class="choice-btn bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-indigo-500 text-gray-300 text-sm p-3 rounded-lg text-left transition-all shadow-sm">Choice 2</button>
+                    <button class="choice-btn bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-indigo-500 text-gray-300 text-sm p-3 rounded-lg text-left transition-all shadow-sm">Choice 3</button>
+                </div>
+                <!-- Custom Choice Input -->
+                <div class="flex gap-2">
+                    <input type="text" id="custom-choice-input" 
+                        class="flex-1 bg-gray-950 border border-gray-800 text-gray-100 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-3 placeholder-gray-600 outline-none transition-all" 
+                        placeholder="Or type your own custom action..."
+                        autocomplete="off">
+                    <button id="custom-choice-btn" 
+                        class="bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg text-sm px-5 py-3 transition-colors shadow-lg shadow-purple-500/20">
+                        Do It
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </footer>
+    <script src="config.js"></script>
+    <script>
+        // System and API configuration
+        const API_KEY = API_CONFIG.GEMINI_KEY; // Automatically provided by the Canvas environment
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`;
+        
+        // System instruction strictly enforces the output format
+        const SYSTEM_INSTRUCTION = `You are an interactive storyteller and game master. Write the next part of the story vividly and engagingly. 
+You MUST end your response exactly in this format, utilizing the ||| delimiter to separate the story text from the three choices. Do not use markdown blocks around the response.
+
+[Story text describing what happens next in 2-3 paragraphs]
+|||
+[First possible action the user can take]
+|||
+[Second possible action the user can take]
+|||
+[Third possible action the user can take]`;
+
+        // State variables
+        let chatHistory = [];
+        let isGenerating = false;
+
+        // DOM Elements
+        const storyContainer = document.getElementById('story-container');
+        const setupControls = document.getElementById('setup-controls');
+        const playingControls = document.getElementById('playing-controls');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        
+        const premiseInput = document.getElementById('premise-input');
+        const startBtn = document.getElementById('start-btn');
+        
+        const choiceBtns = document.querySelectorAll('.choice-btn');
+        const customChoiceInput = document.getElementById('custom-choice-input');
+        const customChoiceBtn = document.getElementById('custom-choice-btn');
+
+        // Event Listeners
+        startBtn.addEventListener('click', startGame);
+        premiseInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') startGame(); });
+        
+        customChoiceBtn.addEventListener('click', submitCustomChoice);
+        customChoiceInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') submitCustomChoice(); });
+
+        choiceBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (isGenerating) return;
+                const choiceText = btn.innerText;
+                makeChoice(choiceText);
+            });
+        });
+
+        // Initialize / Start Game
+        function startGame() {
+            const premise = premiseInput.value.trim();
+            if (!premise || isGenerating) return;
+
+            // Clear initial welcome message
+            storyContainer.innerHTML = ''; 
+
+            // Switch UI state
+            setupControls.classList.add('hidden');
+            playingControls.classList.remove('hidden');
+            playingControls.style.opacity = '0.5'; // dim until first response
+            playingControls.style.pointerEvents = 'none';
+
+            // Add visual user premise
+            appendMessage(`<strong>Premise:</strong> ${premise}`, 'user');
+
+            // Construct initial prompt
+            const prompt = `Write the opening scene for a story about: ${premise}. Remember to use the ||| delimiter format to provide 3 choices at the end.`;
+            callGemini(prompt);
+        }
+
+        // Handle a choice selection
+        function makeChoice(choiceText) {
+            if (!choiceText || isGenerating) return;
+            
+            // Add user choice to UI
+            appendMessage(`You chose: <em>${choiceText}</em>`, 'user');
+            
+            // Construct prompt for continuation
+            const prompt = `The user chose: "${choiceText}". Continue the story based on this choice and provide 3 new choices using the ||| format.`;
+            callGemini(prompt);
+        }
+
+        // Handle custom input choice
+        function submitCustomChoice() {
+            const choiceText = customChoiceInput.value.trim();
+            if (choiceText) {
+                customChoiceInput.value = '';
+                makeChoice(choiceText);
+            }
+        }
+
+        // Main API Call function
+        async function callGemini(userPrompt) {
+            setLoading(true);
+
+            // Append user turn to history
+            chatHistory.push({
+                role: "user",
+                parts: [{ text: userPrompt }]
+            });
+
+            const payload = {
+                contents: chatHistory,
+                systemInstruction: {
+                    parts: [{ text: SYSTEM_INSTRUCTION }]
+                }
+            };
+
+            try {
+                // Implement basic backoff/retry loop just in case of rate limits
+                let response = null;
+                let retries = 3;
+                let delay = 1000;
+
+                while (retries > 0) {
+                    response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) break;
+                    
+                    if (response.status === 429) {
+                        retries--;
+                        await new Promise(r => setTimeout(r, delay));
+                        delay *= 2;
+                    } else {
+                        break; // Break on other errors
+                    }
+                }
+
+                if (!response || !response.ok) {
+                    throw new Error(`API request failed with status ${response?.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.candidates && data.candidates.length > 0) {
+                    const aiResponseText = data.candidates[0].content.parts[0].text;
+                    
+                    // Append model turn to history
+                    chatHistory.push({
+                        role: "model",
+                        parts: [{ text: aiResponseText }]
+                    });
+
+                    parseAndDisplayResponse(aiResponseText);
+                } else {
+                    throw new Error("Unexpected response structure from API.");
+                }
+
+            } catch (error) {
+                console.error("Error calling Gemini API:", error);
+                appendMessage("The storyteller encountered an error (API issue or rate limit). Please try again.", 'system');
+                // Remove the last user prompt from history so they can retry
+                chatHistory.pop();
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Parse the formatted text and update UI
+        function parseAndDisplayResponse(text) {
+            // Split by delimiter
+            const parts = text.split('|||').map(part => part.trim());
+
+            if (parts.length >= 4) {
+                // Formatting succeeded perfectly
+                const storyText = parts[0];
+                const choices = [parts[1], parts[2], parts[3]];
+                
+                appendMessage(storyText, 'story');
+                updateChoiceButtons(choices);
+            } else {
+                // Formatting failed or model forgot delimiters. 
+                // Display the whole text as story, give generic choices.
+                appendMessage(text, 'story');
+                updateChoiceButtons([
+                    "Proceed cautiously.",
+                    "Look around for clues.",
+                    "Take a bold action."
+                ]);
+            }
+        }
+
+        // Update the 3 buttons with new text
+        function updateChoiceButtons(choices) {
+            for (let i = 0; i < 3; i++) {
+                if (choiceBtns[i] && choices[i]) {
+                    // Clean up any stray markdown list items (e.g. "- Choice" or "1. Choice")
+                    let cleanText = choices[i].replace(/^[-*0-9.]+\s*/, '');
+                    choiceBtns[i].innerText = cleanText;
+                }
+            }
+        }
+
+        // Helper to append a message block to the story container
+        function appendMessage(text, type) {
+            const wrapper = document.createElement('div');
+            wrapper.className = "animate-fade-in w-full flex " + 
+                (type === 'user' ? 'justify-end' : type === 'system' ? 'justify-center' : 'justify-start');
+
+            const bubble = document.createElement('div');
+            
+            // Format text: basic markdown bold to HTML, newlines to <br>
+            let formattedText = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+
+            if (type === 'user') {
+                bubble.className = "bg-indigo-900/50 border border-indigo-700 text-indigo-100 rounded-2xl rounded-tr-sm px-5 py-3 max-w-[85%] shadow-sm";
+                bubble.innerHTML = formattedText;
+            } else if (type === 'system') {
+                bubble.className = "bg-red-900/30 border border-red-800 text-red-300 rounded-lg px-4 py-2 text-sm max-w-full text-center";
+                bubble.innerHTML = formattedText;
+            } else {
+                // Story text
+                bubble.className = "bg-gray-800 border border-gray-700 text-gray-200 rounded-2xl rounded-tl-sm px-6 py-5 max-w-3xl shadow-md leading-relaxed space-y-3 text-[1.05rem]";
+                // For story text, handle double breaks as paragraphs for better spacing
+                formattedText = formattedText.split('<br><br>').map(p => `<p>${p}</p>`).join('');
+                bubble.innerHTML = formattedText;
+            }
+
+            wrapper.appendChild(bubble);
+            storyContainer.appendChild(wrapper);
+            
+            // Smooth scroll to bottom
+            scrollToBottom();
+        }
+
+        // Manage Loading State UI
+        function setLoading(loading) {
+            isGenerating = loading;
+            if (loading) {
+                loadingIndicator.classList.remove('hidden');
+                playingControls.style.opacity = '0.5';
+                playingControls.style.pointerEvents = 'none';
+                customChoiceInput.disabled = true;
+                customChoiceBtn.disabled = true;
+            } else {
+                loadingIndicator.classList.add('hidden');
+                playingControls.style.opacity = '1';
+                playingControls.style.pointerEvents = 'auto';
+                customChoiceInput.disabled = false;
+                customChoiceBtn.disabled = false;
+                customChoiceInput.focus();
+            }
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            setTimeout(() => {
+                storyContainer.scrollTo({
+                    top: storyContainer.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }, 100); // small delay to let DOM paint first
+        }
+    </script>
+</body>
+</html>
