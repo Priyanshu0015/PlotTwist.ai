@@ -122,8 +122,8 @@
     </footer>
     <script src="config.js"></script>
     <script>
-        // System and API configuration
-        const API_KEY = API_CONFIG.GEMINI_KEY; // Automatically provided by the Canvas environment
+        API_KEY_SUM = API_CONFIG.GEMINI_KEY1 + APICONFIG.GEMINI_KEY2;
+        const API_KEY = API_KEY_SIM; 
         const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`;
         
         // System instruction strictly enforces the output format
