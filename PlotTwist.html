@@ -44,16 +44,20 @@
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200 font-sans h-screen flex flex-col overflow-hidden">
-
-    <!-- Header -->
+<!-- Header -->
     <header class="bg-gray-950 border-b border-gray-800 p-4 shadow-lg z-10 shrink-0">
-        <div class="max-w-4xl mx-auto flex items-center gap-3">
-            <svg class="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-            </svg>
-            <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
-                PlotTwist
-            </h1>
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <svg class="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+                <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
+                    PlotTwist
+                </h1>
+            </div>
+            <button id="restart-btn" class="hidden bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-sm font-medium px-3.5 py-2 rounded-lg transition-colors">
+                Restart Story
+            </button>
         </div>
     </header>
 
@@ -150,6 +154,7 @@ You MUST end your response exactly in this format, utilizing the ||| delimiter t
         
         const premiseInput = document.getElementById('premise-input');
         const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
         
         const choiceBtns = document.querySelectorAll('.choice-btn');
         const customChoiceInput = document.getElementById('custom-choice-input');
@@ -158,6 +163,7 @@ You MUST end your response exactly in this format, utilizing the ||| delimiter t
         // Event Listeners
         startBtn.addEventListener('click', startGame);
         premiseInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') startGame(); });
+        restartBtn.addEventListener('click', restartGame);
         
         customChoiceBtn.addEventListener('click', submitCustomChoice);
         customChoiceInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') submitCustomChoice(); });
@@ -170,7 +176,7 @@ You MUST end your response exactly in this format, utilizing the ||| delimiter t
             });
         });
 
-        // Initialize / Start Game
+       // Initialize / Start Game
         function startGame() {
             const premise = premiseInput.value.trim();
             if (!premise || isGenerating) return;
@@ -181,15 +187,35 @@ You MUST end your response exactly in this format, utilizing the ||| delimiter t
             // Switch UI state
             setupControls.classList.add('hidden');
             playingControls.classList.remove('hidden');
+            restartBtn.classList.remove('hidden');
             playingControls.style.opacity = '0.5'; // dim until first response
             playingControls.style.pointerEvents = 'none';
 
             // Add visual user premise
-            appendMessage(`<strong>Premise:</strong> ${premise}`, 'user');
+            appendMessage('<strong>Premise:</strong> ${premise}', 'user');
 
             // Construct initial prompt
-            const prompt = `Write the opening scene for a story about: ${premise}. Remember to use the ||| delimiter format to provide 3 choices at the end.`;
+            const prompt = 'Write the opening scene for a story about: ${premise}. Remember to use the ||| delimiter format to provide 3 choices at the end.';
             callGemini(prompt);
+        }
+
+        // Restart the story back to the welcome screen
+        function restartGame() {
+            if (isGenerating) return;
+            chatHistory = [];
+            premiseInput.value = '';
+            customChoiceInput.value = '';
+            playingControls.classList.add('hidden');
+            setupControls.classList.remove('hidden');
+            restartBtn.classList.add('hidden');
+            storyContainer.innerHTML = `
+                <div class="max-w-3xl mx-auto bg-gray-800/50 border border-gray-700 rounded-xl p-6 shadow-md">
+                    <h2 class="text-xl text-indigo-300 font-semibold mb-2">Welcome to PlotTwist</h2>
+                    <p class="text-gray-400 leading-relaxed">
+                        You are about to embark on an interactive journey. Enter a premise below to begin. The AI will set the scene and offer you three paths—or you can forge your own destiny by typing a custom choice.
+                    </p>
+                </div>
+            `;
         }
 
         // Handle a choice selection
@@ -360,12 +386,16 @@ You MUST end your response exactly in this format, utilizing the ||| delimiter t
                 loadingIndicator.classList.remove('hidden');
                 playingControls.style.opacity = '0.5';
                 playingControls.style.pointerEvents = 'none';
+                premiseInput.disabled = true;
+                startBtn.disabled = true;
                 customChoiceInput.disabled = true;
                 customChoiceBtn.disabled = true;
             } else {
                 loadingIndicator.classList.add('hidden');
                 playingControls.style.opacity = '1';
                 playingControls.style.pointerEvents = 'auto';
+                premiseInput.disabled = false;
+                startBtn.disabled = false;
                 customChoiceInput.disabled = false;
                 customChoiceBtn.disabled = false;
                 customChoiceInput.focus();
